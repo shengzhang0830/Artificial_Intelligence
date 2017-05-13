@@ -9,48 +9,94 @@ import queue
 
 
 class State:
-	def __init__(self,current,move=None):
+	def __init__(self, current, previous = None, move = None, depth = 0):
 		self.current = current
-		self.path = []
+		self.previous = previous
+		self.move = move
+		self.depth = depth
+		self.zero_row = self.current.index(0)[0]  # Need to figure out what this returns, make this index a list of 2 elements (row, column)
+		self.zero_column = self.current.index(0)[1]
 		self.size = math.sqrt(len(self.current))
-		self.parent = None
 
 	def __str__(self):
 		return(str(self.current))
 
 	def is_goalstate(self):
-		return self.current == [0,1,2,3,4,5,6,7,8]
+		for i in range(self.size):
+			for j in range(self.size):
+				if self.current[i][j] != i*self.size + j
+					return False
+		return True
+
+	def available_move(self):
+		"""
+		Return a list of legitimate moves
+		"""
+		moves = []
+		if self.zero_row > 0:
+			moves.append('U')
+		if self.zero_row < self.size - 1:
+			moves.append('D')
+		if self.zero_column > 0:
+			moves.append('L')
+		if self.zero_column < self.size - 1:
+			moves.append('R')
+		return moves
 
 	def make_move(self,move):
-		pos = self.current.index(0)
+		"""
+		Change the board according to a move
+		"""
 		if move == "U":
-			if pos-3 >= 0:
-				dup = copy.deepcopy(self)
-				tmp = dup.current[pos]
-				dup.current[pos] = dup.current[pos-3]
-				dup.current[pos-3] = tmp
-				return dup
-		if move == "D":
-			if pos+3 <= 8:
-				dup = copy.deepcopy(self)
-				tmp = dup.current[pos]
-				dup.current[pos] = dup.current[pos+3]
-				dup.current[pos+3] = tmp
-				return dup
-		if move == "L":
-			if pos%3 != 0:
-				dup = copy.deepcopy(self)
-				tmp = dup.current[pos]
-				dup.current[pos] = dup.current[pos-1]
-				dup.current[pos-1] = tmp
-				return dup
-		if move == "R":
-			if pos%3 != 2:
-				dup = copy.deepcopy(self)
-				tmp = dup.current[pos]
-				dup.current[pos] = dup.current[pos+1]
-				dup.current[pos+1] = tmp
-				return dup
+			self.current[self.zero_row][self.zero_column] = self.current[self.zero_row-1][self.zero_column]
+			self.current[self.zero_row-1][self.zero_column] = 0
+			self.zero_row -= 1
+		elif move == "D":
+			self.current[self.zero_row][self.zero_column] = self.current[self.zero_row+1][self.zero_column]
+			self.current[self.zero_row+1][self.zero_column] = 0
+			self.zero_row += 1
+		elif move == "L":
+			self.current[self.zero_row][self.zero_column] = self.current[self.zero_row][self.zero_column-1]
+			self.current[self.zero_row][self.zero_column-1] = 0
+			self.zero_column -= 1
+		elif move == "R":
+			self.current[self.zero_row][self.zero_column] = self.current[self.zero_row][self.zero_column+1]
+			self.current[self.zero_row][self.zero_column+1] = 0
+			self.zero_column += 1
+
+	def get_successors(self):
+		"""
+		Return a list of states that are the result of making actions. (Do not really make the move.)
+		"""
+		moves = self.available_move()
+		successors = []
+		for move in moves:
+			temp_board = self.current[:] # Want to create a shallow copy of the current board, need to check!!
+			if move == "U":
+				temp_board[self.zero_row][self.zero_column] = self.current[self.zero_row-1][self.zero_column]
+				temp_board[self.zero_row-1][self.zero_column] = 0
+				successors.append(State(temp_board, self, move, self.depth + 1))
+			elif move == "D":
+				temp_board[self.zero_row][self.zero_column] = self.current[self.zero_row+1][self.zero_column]
+				temp_board[self.zero_row+1][self.zero_column] = 0
+				successors.append(State(temp_board, self, move, self.depth + 1))
+			elif move == "L":
+				temp_board[self.zero_row][self.zero_column] = self.current[self.zero_row][self.zero_column-1]
+				temp_board[self.zero_row][self.zero_column-1] = 0
+				successors.append(State(temp_board, self, move, self.depth + 1))
+			elif move == "R":
+				temp_board[self.zero_row][self.zero_column] = self.current[self.zero_row][self.zero_column+1]
+				temp_board[self.zero_row][self.zero_column+1] = 0
+				successors.append(State(temp_board, self, move, self.depth + 1))
+		return successors
+
+
+
+class Solver:
+
+
+	def __init__(self):
+		self
 
 	def find_path(self):
 		direct_path = []
@@ -58,12 +104,6 @@ class State:
 			direct_path.append(self.path)
 			self = self.parent
 		return direct_path
-
-	def solver(self,method):
-		if method == 'bfs':
-			self.bfs()
-		if method == 'dfs':
-			self.dfs()
 
 	def bfs(self):
 		frontier = queue.Queue()
@@ -103,6 +143,8 @@ class State:
 						tmp.path = dir
 						tmp.parent = cur_state
 		return None
+
+
 
 if __name__ == "__main__":
 	a = State([0,1,2,3,4,5,6,7,8])
