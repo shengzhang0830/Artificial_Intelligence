@@ -2,6 +2,8 @@
 
 import sys
 import math
+import time
+from resource import getrusage
 import copy
 
 from collections import deque
@@ -93,56 +95,104 @@ class State:
 
 
 class Solver:
-
-
+	"""
+	The Solver class contains methods that implements the search algorithms and 
+	variables that record some key information regarding each algorithm.
+	"""
 	def __init__(self):
-		self
+		self.nodes_expanded = 0
+		self.fringe_size = 1
+		self.max_fringe_size = 1
+		self.path = []
+		self.search_depth = 0
+		self.max_search_depth = 0
+		self.run_time = 0
+		self.ram_usage = 0
 
-	def find_path(self):
-		direct_path = []
-		while self.parent:
-			direct_path.append(self.path)
-			self = self.parent
-		return direct_path
-
-	def bfs(self):
+	def bfs(self, init_state):
+		"""
+		Implements Breath-First Search
+		"""
+		start_time = time.time()
 		frontier = queue.Queue()
-		frontier.put(self)
+		frontier.put(init_state)
 		explored = set()
 
+		# 
 		while frontier.qsize() != 0:
 			cur_state = frontier.get()
-			explored.add(tuple(cur_state.current))
+			explored.add(cur_state)
+			self.fringe_size -= 1
 			if cur_state.is_goalstate():
-				return cur_state.path
-			for dir in ['U','D','L','R']:
-				tmp = cur_state.make_move(dir)
-				if tmp:
-					if tuple(tmp.current) not in explored:
-						frontier.put(tmp)
-						tmp.path.append(dir)
-						tmp.parent = cur_state
-		return None
+				temp_state = cur_state
+				temp_path = []
+				while temp_state.previous != None:
+					temp_path.append(temp_state.move)
+					temp_state = temp_state.previous
+				self.path = temp_path.reverse()
+				self.search_depth = cur_state.depth
+				self.run_time = time.time() - start_time
 
-	def dfs(self):
+		#
+			children = cur_state.get_successors()
+			self.nodes_expanded += 1
+			for child in children:
+				child.depth = cur_state.depth + 1
+				if child not in explored:
+					frontier.put(child)
+					explored.add(child)
+					self.fringe_size += 1
+					if child.depth > self.max_search_depth:
+						self.max_search_depth = child.depth
+					if self.fringe_size > self.max_fringe_size:
+						self.max_fringe_size self.fringe_size
+			ram_temp = getrusage(RUSAGE_SELF).ru_maxrss
+			if ram_temp > self.ram_usage:
+				self.ram_usage = ram_temp
+
+
+	def dfs(self, init_state):
+		"""
+		Implements Depth-First Search
+		"""
+		start_time = time.time()
 		frontier = []
-		frontier.append(self)
+		frontier.append(init_state)
 		explored = set()
 
-		while len(frontier) != 0:
+		# 
+		while frontier.qsize() != 0:
 			cur_state = frontier.pop()
-			print(cur_state)
-			explored.add(tuple(cur_state.current))
+			explored.add(cur_state)
+			self.fringe_size -= 1
 			if cur_state.is_goalstate():
-				return cur_state
-			for dir in ['R','L','D','U']:
-				tmp = cur_state.make_move(dir)
-				if tmp:
-					if tuple(tmp.current) not in explored or [ x.current for x in frontier]:
-						frontier.append(tmp)
-						tmp.path = dir
-						tmp.parent = cur_state
-		return None
+				temp_state = cur_state
+				temp_path = []
+				while temp_state.previous != None:
+					temp_path.append(temp_state.move)
+					temp_state = temp_state.previous
+				self.path = temp_path.reverse()
+				self.search_depth = cur_state.depth
+				self.run_time = time.time() - start_time
+
+		#
+			children = cur_state.get_successors()
+			self.nodes_expanded += 1
+			children.reverse()
+			for child in children:
+				child.depth = cur_state.depth + 1
+				if child not in explored:
+					frontier.append(child)
+					explored.add(child)
+					self.fringe_size += 1
+					if child.depth > self.max_search_depth:
+						self.max_search_depth = child.depth
+					if self.fringe_size > self.max_fringe_size:
+						self.max_fringe_size self.fringe_size
+			ram_temp = getrusage(RUSAGE_SELF).ru_maxrss
+			if ram_temp > self.ram_usage:
+				self.ram_usage = ram_temp
+
 
 
 
